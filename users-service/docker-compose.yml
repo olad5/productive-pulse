@@ -1,0 +1,21 @@
+version: '3.6'
+services:
+  database:
+    container_name: productive-pulse-user-service-postgres
+    image: postgres:14.5
+    command: postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c random_page_cost=1.0
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=newPassword
+      - POSTGRES_DB=productive-pulse
+    ports:
+      - '5432:5432'
+
+  adminer:
+    container_name: productive-pulse-user-service-adminer
+    image: adminer:4.8.1
+    environment:
+      ADMINER_DEFAULT_SERVER: postgresql
+      ADMINER_DESIGN: hever
+    ports:
+      - "8080:8080"
