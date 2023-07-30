@@ -1,0 +1,7 @@
+version: '3.6'
+services:
+  database:
+    container_name: productive-pulse-todo-service-mongo
+    image: mongo:4.4.20-rc0
+    ports:
+      - 27017:27017

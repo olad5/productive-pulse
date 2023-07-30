@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 
+	appErrors "github.com/olad5/productive-pulse/pkg/errors"
+
+	response "github.com/olad5/productive-pulse/pkg/utils"
 	"github.com/olad5/productive-pulse/users-service/internal/usecases/users"
-	"github.com/olad5/productive-pulse/users-service/internal/utils"
 )
 
-func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
+func (h UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
-		utils.ErrorResponse(w, "missing body request", http.StatusBadRequest)
+		response.ErrorResponse(w, appErrors.ErrMissingBody, http.StatusBadRequest)
 		return
 	}
 	type requestDTO struct {
@@ -22,38 +24,38 @@ func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var request requestDTO
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		utils.ErrorResponse(w, "Invalid JSON", http.StatusBadRequest)
+		response.ErrorResponse(w, appErrors.ErrInvalidJson, http.StatusBadRequest)
 		return
 	}
 	if request.Email == "" {
-		utils.ErrorResponse(w, "email required", http.StatusBadRequest)
+		response.ErrorResponse(w, "email required", http.StatusBadRequest)
 		return
 	}
 	if request.Password == "" {
-		utils.ErrorResponse(w, "password required", http.StatusBadRequest)
+		response.ErrorResponse(w, "password required", http.StatusBadRequest)
 		return
 	}
 
 	if request.FirstName == "" {
-		utils.ErrorResponse(w, "first_name required", http.StatusBadRequest)
+		response.ErrorResponse(w, "first_name required", http.StatusBadRequest)
 		return
 	}
 	if request.LastName == "" {
-		utils.ErrorResponse(w, "last_name required", http.StatusBadRequest)
+		response.ErrorResponse(w, "last_name required", http.StatusBadRequest)
 		return
 	}
 
 	newUser, err := h.service.CreateUser(r.Context(), request.FirstName, request.LastName, request.Email, request.Password)
 	if err != nil && err.Error() == users.ErrUserAlreadyExists {
-		utils.ErrorResponse(w, err.Error(), http.StatusBadRequest)
+		response.ErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		utils.ErrorResponse(w, "something went wrong", http.StatusInternalServerError)
+		response.ErrorResponse(w, appErrors.ErrSomethingWentWrong, http.StatusInternalServerError)
 		return
 	}
 
-	utils.SuccessResponse(w, "user created successfully",
+	response.SuccessResponse(w, "user created successfully",
 		map[string]interface{}{
 			"id":         newUser.ID.String(),
 			"email":      newUser.Email,

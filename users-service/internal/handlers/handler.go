@@ -6,13 +6,13 @@ import (
 	"github.com/olad5/productive-pulse/users-service/internal/usecases/users"
 )
 
-type Handler struct {
+type UserHandler struct {
 	service users.UserService
 }
 
-func NewHandler(service users.UserService) (*Handler, error) {
+func NewHandler(service users.UserService) (*UserHandler, error) {
 	if service == (users.UserService{}) {
 		return nil, errors.New("service cannot be empty")
 	}
-	return &Handler{service}, nil
+	return &UserHandler{service}, nil
 }

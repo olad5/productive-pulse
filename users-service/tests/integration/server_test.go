@@ -6,28 +6,22 @@ package integration
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"log"
-	"math/big"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/olad5/productive-pulse/config"
+	"github.com/olad5/productive-pulse/pkg/app/server"
+	tests "github.com/olad5/productive-pulse/pkg/tests"
 	"github.com/olad5/productive-pulse/users-service/internal/app/router"
-	"github.com/olad5/productive-pulse/users-service/internal/app/server"
 	"github.com/olad5/productive-pulse/users-service/internal/handlers"
 	"github.com/olad5/productive-pulse/users-service/internal/infra/postgres"
 	"github.com/olad5/productive-pulse/users-service/internal/usecases/users"
 )
 
-var (
-	appRouter http.Handler
-	svr       *server.Server
-)
+var svr *server.Server
 
 func TestMain(m *testing.M) {
 	configurations := config.GetConfig("../config/.test.env")
@@ -52,20 +46,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal("failed to create the User handler: ", err)
 	}
-	appRouter = router.NewHttpRouter(*userHandler)
+	appRouter := router.NewHttpRouter(*userHandler)
 	svr = server.CreateNewServer(appRouter)
 
 	exitVal := m.Run()
 	os.Exit(exitVal)
-}
-
-func executeRequest(req *http.Request, s *server.Server) *httptest.ResponseRecorder {
-	req.Header.Set("Content-Type", "application/json")
-
-	rr := httptest.NewRecorder()
-	s.Router.ServeHTTP(rr, req)
-
-	return rr
 }
 
 func TestRegister(t *testing.T) {
@@ -73,15 +58,15 @@ func TestRegister(t *testing.T) {
 	t.Run("test for invalid json request body",
 		func(t *testing.T) {
 			req, _ := http.NewRequest("POST", route, nil)
-			response := executeRequest(req, svr)
-			assertStatusCode(t, http.StatusBadRequest, response.Code)
+			response := tests.ExecuteRequest(req, svr)
+			tests.AssertStatusCode(t, http.StatusBadRequest, response.Code)
 		},
 	)
 	t.Run(`Given a valid user registration request, when the user submits the request, 
     then the server should respond with a success status code, and the user's account 
     should be created in the database.`,
 		func(t *testing.T) {
-			email := "will" + fmt.Sprint(generateUniqueId()) + "@gmail.com"
+			email := "will" + fmt.Sprint(tests.GenerateUniqueId()) + "@gmail.com"
 			requestBody := []byte(fmt.Sprintf(`{
       "email": "%s",
       "first_name": "will",
@@ -89,10 +74,10 @@ func TestRegister(t *testing.T) {
       "password": "some-random-password"
       }`, email))
 			req, _ := http.NewRequest("POST", route, bytes.NewBuffer(requestBody))
-			response := executeRequest(req, svr)
-			assertStatusCode(t, http.StatusOK, response.Code)
-			data := parseResponse(response)["data"].(map[string]interface{})
-			assertResponseMessage(t, data["email"].(string), email)
+			response := tests.ExecuteRequest(req, svr)
+			tests.AssertStatusCode(t, http.StatusOK, response.Code)
+			data := tests.ParseResponse(response)["data"].(map[string]interface{})
+			tests.AssertResponseMessage(t, data["email"].(string), email)
 		},
 	)
 
@@ -109,7 +94,7 @@ func TestRegister(t *testing.T) {
       "password": "some-random-password"
       }`, email))
 			req, _ := http.NewRequest("POST", route, bytes.NewBuffer(requestBody))
-			response := executeRequest(req, svr)
+			_ = tests.ExecuteRequest(req, svr)
 
 			secondRequestBody := []byte(fmt.Sprintf(`{
       "email": "%s",
@@ -119,9 +104,10 @@ func TestRegister(t *testing.T) {
       }`, email))
 			req, _ = http.NewRequest("POST", route, bytes.NewBuffer(secondRequestBody))
 
-			assertStatusCode(t, http.StatusBadRequest, response.Code)
-			message := parseResponse(response)["message"].(string)
-			assertResponseMessage(t, message, "email already exist")
+			response := tests.ExecuteRequest(req, svr)
+			tests.AssertStatusCode(t, http.StatusBadRequest, response.Code)
+			message := tests.ParseResponse(response)["message"].(string)
+			tests.AssertResponseMessage(t, message, "email already exist")
 		},
 	)
 }
@@ -131,8 +117,8 @@ func TestLogin(t *testing.T) {
 	t.Run("test for invalid json request body",
 		func(t *testing.T) {
 			req, _ := http.NewRequest("POST", route, nil)
-			response := executeRequest(req, svr)
-			assertStatusCode(t, http.StatusBadRequest, response.Code)
+			response := tests.ExecuteRequest(req, svr)
+			tests.AssertStatusCode(t, http.StatusBadRequest, response.Code)
 		},
 	)
 	t.Run(`Given a user attempts to log in with valid credentials,
@@ -147,12 +133,12 @@ func TestLogin(t *testing.T) {
       "password": "some-random-password"
       }`, email))
 			req, _ := http.NewRequest("POST", route, bytes.NewBuffer(requestBody))
-			response := executeRequest(req, svr)
+			response := tests.ExecuteRequest(req, svr)
 
-			assertStatusCode(t, http.StatusOK, response.Code)
-			responseBody := parseResponse(response)
+			tests.AssertStatusCode(t, http.StatusOK, response.Code)
+			responseBody := tests.ParseResponse(response)
 			message := responseBody["message"].(string)
-			assertResponseMessage(t, message, "user logged in successfully")
+			tests.AssertResponseMessage(t, message, "user logged in successfully")
 
 			data := responseBody["data"].(map[string]interface{})
 
@@ -182,11 +168,11 @@ func TestLogin(t *testing.T) {
       "password": "some-random-password"
       }`, email))
 			req, _ := http.NewRequest("POST", route, bytes.NewBuffer(requestBody))
-			response := executeRequest(req, svr)
+			response := tests.ExecuteRequest(req, svr)
 
-			assertStatusCode(t, http.StatusBadRequest, response.Code)
-			message := parseResponse(response)["message"].(string)
-			assertResponseMessage(t, message, "incorrect credentials")
+			tests.AssertStatusCode(t, http.StatusBadRequest, response.Code)
+			message := tests.ParseResponse(response)["message"].(string)
+			tests.AssertResponseMessage(t, message, "incorrect credentials")
 		},
 	)
 }
@@ -200,8 +186,8 @@ func TestAuth(t *testing.T) {
 		func(t *testing.T) {
 			req, _ := http.NewRequest("GET", route, nil)
 
-			response := executeRequest(req, svr)
-			assertStatusCode(t, http.StatusUnauthorized, response.Code)
+			response := tests.ExecuteRequest(req, svr)
+			tests.AssertStatusCode(t, http.StatusUnauthorized, response.Code)
 		},
 	)
 	t.Run(`Given a user with valid Bearer Token
@@ -215,8 +201,8 @@ func TestAuth(t *testing.T) {
       "password": "some-random-password"
       }`, email))
 			loginReq, _ := http.NewRequest("POST", "/users/login", bytes.NewBuffer(requestBody))
-			loginResponse := executeRequest(loginReq, svr)
-			loginResponseBody := parseResponse(loginResponse)
+			loginResponse := tests.ExecuteRequest(loginReq, svr)
+			loginResponseBody := tests.ParseResponse(loginResponse)
 			loginData := loginResponseBody["data"].(map[string]interface{})
 			accessToken := loginData["access_token"]
 			token := accessToken.(string)
@@ -224,8 +210,8 @@ func TestAuth(t *testing.T) {
 			req, _ := http.NewRequest("GET", route, nil)
 			req.Header.Set("Authorization", "Bearer "+token)
 
-			response := executeRequest(req, svr)
-			assertStatusCode(t, http.StatusOK, response.Code)
+			response := tests.ExecuteRequest(req, svr)
+			tests.AssertStatusCode(t, http.StatusOK, response.Code)
 		},
 	)
 	t.Run(`Given a user with an invalid JWT token signature
@@ -237,34 +223,8 @@ func TestAuth(t *testing.T) {
 			token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOGFhNzQwMzEtMzkzZC00MDFlLWE1ZDMtYmE3MjA4OWFiZTQwIn0.fbQDiaMeWYt_nAWsIbxqmwSgQKOYYz1OtlJikAHMqVE"
 			req.Header.Set("Authorization", "Bearer "+token)
 
-			response := executeRequest(req, svr)
-			assertStatusCode(t, http.StatusUnauthorized, response.Code)
+			response := tests.ExecuteRequest(req, svr)
+			tests.AssertStatusCode(t, http.StatusUnauthorized, response.Code)
 		},
 	)
-}
-
-func assertStatusCode(t *testing.T, expected, actual int) {
-	if expected != actual {
-		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
-	}
-}
-
-func assertResponseMessage(t *testing.T, got, expected string) {
-	if got != expected {
-		t.Errorf("got message: %q expected: %q", got, expected)
-	}
-}
-
-func parseResponse(w *httptest.ResponseRecorder) map[string]interface{} {
-	res := make(map[string]interface{})
-	json.NewDecoder(w.Body).Decode(&res)
-	return res
-}
-
-func generateUniqueId() int {
-	MAX_INT := 7935425686241
-	b := new(big.Int).SetInt64(int64(MAX_INT))
-	randomBigInt, _ := rand.Int(rand.Reader, b)
-	randomeNewInt := int(randomBigInt.Int64())
-	return randomeNewInt
 }

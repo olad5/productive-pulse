@@ -9,7 +9,7 @@ import (
 	"github.com/olad5/productive-pulse/users-service/internal/handlers"
 )
 
-func NewHttpRouter(userHandler handlers.Handler) http.Handler {
+func NewHttpRouter(userHandler handlers.UserHandler) http.Handler {
 	router := chi.NewRouter()
 	router.Use(
 		middleware.AllowContentType("application/json"),

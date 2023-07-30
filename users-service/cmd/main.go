@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/olad5/productive-pulse/config"
+	"github.com/olad5/productive-pulse/pkg/app/server"
 	"github.com/olad5/productive-pulse/users-service/internal/app/router"
-	"github.com/olad5/productive-pulse/users-service/internal/app/server"
 	"github.com/olad5/productive-pulse/users-service/internal/handlers"
 	"github.com/olad5/productive-pulse/users-service/internal/infra/postgres"
 	"github.com/olad5/productive-pulse/users-service/internal/usecases/users"

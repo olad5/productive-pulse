@@ -3,19 +3,20 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/olad5/productive-pulse/users-service/internal/utils"
+	appErrors "github.com/olad5/productive-pulse/pkg/errors"
+	response "github.com/olad5/productive-pulse/pkg/utils"
 )
 
-func (h Handler) Auth(w http.ResponseWriter, r *http.Request) {
+func (h UserHandler) Auth(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 
 	userId, err := h.service.VerifyUser(r.Context(), authHeader)
 	if err != nil {
-		utils.ErrorResponse(w, "unauthorized", http.StatusUnauthorized)
+		response.ErrorResponse(w, appErrors.ErrUnauthorized, http.StatusUnauthorized)
 		return
 	}
 
-	utils.SuccessResponse(w, "success",
+	response.SuccessResponse(w, "success",
 		map[string]interface{}{
 			"user_id": userId,
 		})

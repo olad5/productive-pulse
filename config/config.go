@@ -8,9 +8,11 @@ import (
 )
 
 type Configurations struct {
-	UserServiceDBUrl     string
-	UserServicePort      string
-	UserServiceSecretKey string
+	UserServiceDBUrl              string
+	UserServicePort               string
+	UserServiceSecretKey          string
+	TodoServiceDBConnectionString string
+	TodoServicePort               string
 }
 
 func GetConfig(filepath string) *Configurations {
@@ -20,9 +22,11 @@ func GetConfig(filepath string) *Configurations {
 	}
 
 	configurations := Configurations{
-		UserServiceDBUrl:     os.Getenv("USER_SERVICE_DATABASE_URL"),
-		UserServicePort:      os.Getenv("USER_SERVICE_PORT"),
-		UserServiceSecretKey: os.Getenv("USER_SERVICE_SECRET"),
+		UserServiceDBUrl:              os.Getenv("USER_SERVICE_DATABASE_URL"),
+		UserServicePort:               os.Getenv("USER_SERVICE_PORT"),
+		UserServiceSecretKey:          os.Getenv("USER_SERVICE_SECRET"),
+		TodoServiceDBConnectionString: os.Getenv("TODO_SERVICE_CONNECTION_STRING"),
+		TodoServicePort:               os.Getenv("TODO_SERVICE_PORT"),
 	}
 
 	return &configurations
