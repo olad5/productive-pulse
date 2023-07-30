@@ -1,3 +1,8 @@
+docker.start.nginx:
+	docker compose --file ./docker-compose.yml  up -d
+
+docker.stop.nginx:
+	docker compose --file ./docker-compose.yml  down
 
 user-service.docker.start:
 	docker compose --file ./users-service/docker-compose.yml  up -d
