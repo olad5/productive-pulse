@@ -10,7 +10,10 @@ import (
 	"github.com/olad5/productive-pulse/users-service/internal/usecases/users"
 )
 
-func (h UserHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (u UserHandler) Register(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	ctx, span := u.tracer.Start(ctx, "Register-handler")
+	defer span.End()
 	if r.Body == nil {
 		response.ErrorResponse(w, appErrors.ErrMissingBody, http.StatusBadRequest)
 		return
@@ -45,7 +48,7 @@ func (h UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newUser, err := h.service.CreateUser(r.Context(), request.FirstName, request.LastName, request.Email, request.Password)
+	newUser, err := u.service.CreateUser(ctx, u.tracer, request.FirstName, request.LastName, request.Email, request.Password)
 	if err != nil && err.Error() == users.ErrUserAlreadyExists {
 		response.ErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return

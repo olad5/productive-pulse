@@ -8,11 +8,17 @@ import (
 )
 
 type Configurations struct {
-	UserServiceDBUrl              string
-	UserServicePort               string
-	UserServiceSecretKey          string
+	UserServiceName      string
+	UserServiceDBUrl     string
+	UserServicePort      string
+	UserServiceSecretKey string
+	ProxyBaseUrl         string
+
+	TodoServiceName               string
 	TodoServiceDBConnectionString string
 	TodoServicePort               string
+
+	TracingCollectorEndpoint string
 }
 
 func GetConfig(filepath string) *Configurations {
@@ -22,9 +28,16 @@ func GetConfig(filepath string) *Configurations {
 	}
 
 	configurations := Configurations{
-		UserServiceDBUrl:              os.Getenv("USER_SERVICE_DATABASE_URL"),
-		UserServicePort:               os.Getenv("USER_SERVICE_PORT"),
-		UserServiceSecretKey:          os.Getenv("USER_SERVICE_SECRET"),
+		ProxyBaseUrl: os.Getenv("PROXY_BASE_URL"),
+
+		TracingCollectorEndpoint: os.Getenv("TRACING_COLLECTOR_ENDPOINT"),
+
+		UserServiceName:      "users-service",
+		UserServiceDBUrl:     os.Getenv("USER_SERVICE_DATABASE_URL"),
+		UserServicePort:      os.Getenv("USER_SERVICE_PORT"),
+		UserServiceSecretKey: os.Getenv("USER_SERVICE_SECRET"),
+
+		TodoServiceName:               "todos-service",
 		TodoServiceDBConnectionString: os.Getenv("TODO_SERVICE_CONNECTION_STRING"),
 		TodoServicePort:               os.Getenv("TODO_SERVICE_PORT"),
 	}

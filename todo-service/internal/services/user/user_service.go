@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 type UserServiceResponse struct {
@@ -17,7 +19,7 @@ type UserServiceResponse struct {
 }
 
 type UserServiceAdapter interface {
-	VerifyUser(ctx context.Context, authHeader string) (string, error)
+	VerifyUser(ctx context.Context, tracer trace.Tracer, authHeader string) (string, error)
 }
 
 type UserService struct {
@@ -37,18 +39,24 @@ func NewUserService(client *http.Client, url string) (*UserService, error) {
 	return &UserService{client, url}, nil
 }
 
-func (a *UserService) VerifyUser(ctx context.Context, authHeader string) (string, error) {
-	url := a.url + "/users/auth"
+func (u *UserService) VerifyUser(ctx context.Context, tracer trace.Tracer, authHeader string) (string, error) {
+	ctx, span := tracer.Start(ctx, "user-service-adapter")
+	defer span.End()
+
+	url := u.url + "/users/auth"
+
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Authorization", authHeader)
-	res, err := a.client.Do(req)
+
+	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
 		return "", err
 	}
 	defer res.Body.Close()
+
 	if res.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("bad request to UserService: %d", res.StatusCode)
 	}

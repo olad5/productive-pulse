@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 type StubUserService struct {
@@ -11,7 +13,7 @@ type StubUserService struct {
 	url    string
 }
 
-func (s *StubUserService) VerifyUser(ctx context.Context, authHeader string) (string, error) {
+func (s *StubUserService) VerifyUser(ctx context.Context, tracer trace.Tracer, authHeader string) (string, error) {
 	if authHeader == "Bearer "+ValidTokenForUser1 {
 		return "8aa74031-393d-401e-a5d3-ba72089abe40", nil
 	}

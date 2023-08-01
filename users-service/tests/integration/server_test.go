@@ -12,9 +12,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/exaring/otelpgx"
 	"github.com/olad5/productive-pulse/config"
 	"github.com/olad5/productive-pulse/pkg/app/server"
 	tests "github.com/olad5/productive-pulse/pkg/tests"
+	"github.com/olad5/productive-pulse/pkg/utils"
 	"github.com/olad5/productive-pulse/users-service/internal/app/router"
 	"github.com/olad5/productive-pulse/users-service/internal/handlers"
 	"github.com/olad5/productive-pulse/users-service/internal/infra/postgres"
@@ -27,7 +29,15 @@ func TestMain(m *testing.M) {
 	configurations := config.GetConfig("../config/.test.env")
 	ctx := context.Background()
 
-	userRepo, err := postgres.NewPostgresRepo(ctx, configurations.UserServiceDBUrl)
+	tracerProvider, err := utils.NewTracerProvider(configurations.UserServiceName, "")
+	if err != nil {
+		log.Fatal("JaegerTraceProvider failed to Initialize", err)
+	}
+
+	tracer := tracerProvider.Tracer(configurations.UserServiceName)
+	postgresTracer := otelpgx.NewTracer()
+
+	userRepo, err := postgres.NewPostgresRepo(ctx, postgresTracer, configurations.UserServiceDBUrl)
 	if err != nil {
 		log.Fatal("Error Initializing User Repo")
 	}
@@ -42,11 +52,11 @@ func TestMain(m *testing.M) {
 		log.Fatal("Error Initializing UserService")
 	}
 
-	userHandler, err := handlers.NewHandler(*userService)
+	userHandler, err := handlers.NewHandler(*userService, tracer)
 	if err != nil {
 		log.Fatal("failed to create the User handler: ", err)
 	}
-	appRouter := router.NewHttpRouter(*userHandler)
+	appRouter := router.NewHttpRouter(*userHandler, configurations)
 	svr = server.CreateNewServer(appRouter)
 
 	exitVal := m.Run()

@@ -15,10 +15,14 @@ import (
 	"github.com/olad5/productive-pulse/config"
 	"github.com/olad5/productive-pulse/pkg/app/server"
 	tests "github.com/olad5/productive-pulse/pkg/tests"
+	"github.com/olad5/productive-pulse/pkg/utils"
 	"github.com/olad5/productive-pulse/todo-service/internal/app/router"
 	"github.com/olad5/productive-pulse/todo-service/internal/handlers"
 	"github.com/olad5/productive-pulse/todo-service/internal/infra/mongo"
+
 	"github.com/olad5/productive-pulse/todo-service/internal/usecases/todos"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
+	"go.opentelemetry.io/otel"
 )
 
 var svr *server.Server
@@ -27,7 +31,15 @@ func TestMain(m *testing.M) {
 	configurations := config.GetConfig("../config/.test.env")
 	ctx := context.Background()
 
-	todoRepo, err := mongo.NewMongoRepo(ctx, configurations.TodoServiceDBConnectionString)
+	tracerProvider, err := utils.NewTracerProvider(configurations.TodoServiceName, "")
+	if err != nil {
+		log.Fatal("JaegerTraceProvider failed to Initialize", err)
+	}
+
+	tracer := otel.Tracer(configurations.TodoServiceName)
+
+	mongoMonitor := otelmongo.NewMonitor(otelmongo.WithTracerProvider(tracerProvider))
+	todoRepo, err := mongo.NewMongoRepo(ctx, mongoMonitor, configurations.TodoServiceDBConnectionString)
 	if err != nil {
 		log.Fatal("Error Initializing Todo Repo")
 	}
@@ -41,11 +53,11 @@ func TestMain(m *testing.M) {
 		url:    "",
 	}
 
-	todoHandler, err := handlers.NewTodoHandler(*todoService, userService)
+	todoHandler, err := handlers.NewTodoHandler(*todoService, userService, tracer)
 	if err != nil {
 		log.Fatal("failed to create the Todo handler: ", err)
 	}
-	appRouter := router.NewHttpRouter(*todoHandler)
+	appRouter := router.NewHttpRouter(*todoHandler, configurations)
 	svr = server.CreateNewServer(appRouter)
 
 	exitVal := m.Run()

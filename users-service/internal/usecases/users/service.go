@@ -12,6 +12,7 @@ import (
 	"github.com/olad5/productive-pulse/config"
 	"github.com/olad5/productive-pulse/users-service/internal/domain"
 	"github.com/olad5/productive-pulse/users-service/internal/infra"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,7 +35,9 @@ func NewUserService(userRepo infra.UserRepository, configurations *config.Config
 	return &UserService{userRepo, configurations}, nil
 }
 
-func (u *UserService) CreateUser(ctx context.Context, firstName, lastName, email, password string) (domain.User, error) {
+func (u *UserService) CreateUser(ctx context.Context, tracer trace.Tracer, firstName, lastName, email, password string) (domain.User, error) {
+	ctx, span := tracer.Start(ctx, "CreateUser")
+	defer span.End()
 	existingUser, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err == nil && existingUser.Email == email {
 		return domain.User{}, errors.New(ErrUserAlreadyExists)
@@ -62,7 +65,9 @@ func (u *UserService) CreateUser(ctx context.Context, firstName, lastName, email
 	return newUser, nil
 }
 
-func (u *UserService) LogUserIn(ctx context.Context, email, password string) (string, error) {
+func (u *UserService) LogUserIn(ctx context.Context, tracer trace.Tracer, email, password string) (string, error) {
+	ctx, span := tracer.Start(ctx, "LogUserIn")
+	defer span.End()
 	existingUser, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err != nil && err.Error() == infra.ErrRecordNotFound {
 		return "", errors.New(ErrUserNotFound)
@@ -78,7 +83,9 @@ func (u *UserService) LogUserIn(ctx context.Context, email, password string) (st
 	return accessToken, nil
 }
 
-func (u *UserService) VerifyUser(ctx context.Context, authHeader string) (string, error) {
+func (u *UserService) VerifyUser(ctx context.Context, tracer trace.Tracer, authHeader string) (string, error) {
+	ctx, span := tracer.Start(ctx, "VerifyUser")
+	defer span.End()
 	const Bearer = "Bearer "
 	if authHeader != "" && strings.HasPrefix(authHeader, Bearer) {
 		token := strings.TrimPrefix(authHeader, Bearer)

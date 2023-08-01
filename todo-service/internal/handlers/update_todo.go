@@ -10,8 +10,11 @@ import (
 	"github.com/olad5/productive-pulse/todo-service/internal/utils"
 )
 
-func (h TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
+func (t TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	ctx, span := t.tracer.Start(ctx, "CreateTodo-handler")
+	defer span.End()
+
 	existingTodoId := chi.URLParam(r, "id")
 
 	if r.Body == nil {
@@ -37,12 +40,12 @@ func (h TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		response.ErrorResponse(w, appErrors.ErrUnauthorized, http.StatusUnauthorized)
 		return
 	}
-	userId, err := h.userService.VerifyUser(ctx, authHeader)
+	userId, err := t.userService.VerifyUser(ctx, t.tracer, authHeader)
 	if err != nil {
 		response.ErrorResponse(w, appErrors.ErrUnauthorized, http.StatusUnauthorized)
 		return
 	}
-	updatedTodo, err := h.todoService.UpdateTodo(ctx, userId, existingTodoId, request.Text)
+	updatedTodo, err := t.todoService.UpdateTodo(ctx, t.tracer, userId, existingTodoId, request.Text)
 	if err != nil {
 		response.ErrorResponse(w, appErrors.ErrSomethingWentWrong, http.StatusInternalServerError)
 		return

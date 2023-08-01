@@ -10,8 +10,11 @@ import (
 	"github.com/olad5/productive-pulse/todo-service/internal/utils"
 )
 
-func (h TodoHandler) GetTodo(w http.ResponseWriter, r *http.Request) {
+func (t TodoHandler) GetTodo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	ctx, span := t.tracer.Start(ctx, "GetTodo-handler")
+	defer span.End()
+
 	todoId := chi.URLParam(r, "id")
 
 	if todoId == "" {
@@ -24,13 +27,14 @@ func (h TodoHandler) GetTodo(w http.ResponseWriter, r *http.Request) {
 		response.ErrorResponse(w, appErrors.ErrUnauthorized, http.StatusUnauthorized)
 		return
 	}
-	userId, err := h.userService.VerifyUser(ctx, authHeader)
+
+	userId, err := t.userService.VerifyUser(ctx, t.tracer, authHeader)
 	if err != nil {
 		response.ErrorResponse(w, appErrors.ErrUnauthorized, http.StatusUnauthorized)
 		return
 	}
 
-	todo, err := h.todoService.GetTodo(ctx, userId, todoId)
+	todo, err := t.todoService.GetTodo(ctx, t.tracer, userId, todoId)
 	if err != nil {
 		if err == todos.ErrInvalidTodoId {
 			response.ErrorResponse(w, "invalid todoId", http.StatusBadRequest)

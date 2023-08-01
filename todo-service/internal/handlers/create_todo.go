@@ -10,8 +10,10 @@ import (
 	"github.com/olad5/productive-pulse/todo-service/internal/utils"
 )
 
-func (h TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
+func (t TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	ctx, span := t.tracer.Start(ctx, "CreateTodo-handler")
+	defer span.End()
 	if r.Body == nil {
 		response.ErrorResponse(w, appErrors.ErrMissingBody, http.StatusBadRequest)
 		return
@@ -38,12 +40,12 @@ func (h TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := h.userService.VerifyUser(ctx, authHeader)
+	userId, err := t.userService.VerifyUser(ctx, t.tracer, authHeader)
 	if err != nil {
 		response.ErrorResponse(w, appErrors.ErrUnauthorized, http.StatusUnauthorized)
 		return
 	}
-	newTodo, err := h.todoService.CreateTodo(ctx, userId, request.Text)
+	newTodo, err := t.todoService.CreateTodo(ctx, t.tracer, userId, request.Text)
 	if err != nil {
 		if err == todos.ErrInvalidUserId {
 			response.ErrorResponse(w, appErrors.ErrSomethingWentWrong, http.StatusInternalServerError)

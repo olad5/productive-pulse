@@ -8,20 +8,28 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/olad5/productive-pulse/users-service/internal/domain"
 	"github.com/olad5/productive-pulse/users-service/internal/infra"
 )
 
 type PostgresRepository struct {
-	connection *pgx.Conn
+	connection *pgxpool.Pool
 }
 
-func NewPostgresRepo(ctx context.Context, DatabaseUrl string) (*PostgresRepository, error) {
-	conn, err := pgx.Connect(ctx, DatabaseUrl)
+func NewPostgresRepo(ctx context.Context, tracer pgx.QueryTracer, DatabaseUrl string) (*PostgresRepository, error) {
+	if tracer == nil {
+		return &PostgresRepository{}, fmt.Errorf("tracer cannot be empty")
+	}
+
+	dbConfig, err := pgxpool.ParseConfig(DatabaseUrl)
+	dbConfig.ConnConfig.Tracer = tracer
+	connectionPool, err := pgxpool.NewWithConfig(ctx, dbConfig)
 	if err != nil {
 		return &PostgresRepository{}, fmt.Errorf("Failed to create PostgresRepository:  %w", err)
 	}
-	return &PostgresRepository{connection: conn}, nil
+
+	return &PostgresRepository{connection: connectionPool}, nil
 }
 
 func (p *PostgresRepository) Migrate(ctx context.Context) error {

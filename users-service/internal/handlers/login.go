@@ -9,7 +9,10 @@ import (
 	"github.com/olad5/productive-pulse/users-service/internal/usecases/users"
 )
 
-func (h UserHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (u UserHandler) Login(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	ctx, span := u.tracer.Start(ctx, "login-handler")
+	defer span.End()
 	if r.Body == nil {
 		response.ErrorResponse(w, appErrors.ErrMissingBody, http.StatusBadRequest)
 		return
@@ -33,7 +36,7 @@ func (h UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := h.service.LogUserIn(r.Context(), request.Email, request.Password)
+	accessToken, err := u.service.LogUserIn(ctx, u.tracer, request.Email, request.Password)
 	if err != nil && err.Error() == users.ErrUserNotFound {
 		response.ErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return

@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/bson/bsonrw"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -33,8 +34,10 @@ var (
 			Build()
 )
 
-func NewMongoRepo(ctx context.Context, connectionString string) (*MongoRepository, error) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connectionString).SetRegistry(mongoRegistry))
+func NewMongoRepo(ctx context.Context, monitor *event.CommandMonitor, connectionString string) (*MongoRepository, error) {
+	opts := options.Client()
+	opts.Monitor = monitor
+	client, err := mongo.Connect(ctx, opts.ApplyURI(connectionString).SetRegistry(mongoRegistry))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a mongo client: %w", err)
 	}
