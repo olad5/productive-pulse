@@ -32,7 +32,6 @@ func main() {
 		log.Fatal("Error Initializing User Repo")
 	}
 
-	// TODO:check all the files in staging and make sure they are free of comments
 	err = userRepo.Ping(ctx)
 	if err != nil {
 		log.Fatal("Failed to ping UserRepo", err)
