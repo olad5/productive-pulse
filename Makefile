@@ -37,3 +37,7 @@ test.todos-service.verbose: todos-service.docker.test.start
 run.todo-service:  todo-service.docker.start 
 		go run ./todo-service/cmd/main.go
 
+
+
+run.load-test:  
+		go run scripts/load_test/main.go 
